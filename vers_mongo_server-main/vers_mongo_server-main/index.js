@@ -11,7 +11,7 @@ app.use(
   cors({
     origin: [
       "https://car.vkrepo.in",
-     "http://localhost:3000"
+      "https://web-py1p.onrender.com"
     ],
   })
 );
