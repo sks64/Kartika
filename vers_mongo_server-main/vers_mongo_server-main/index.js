@@ -11,7 +11,8 @@ app.use(
   cors({
     origin: [
       "https://car.vkrepo.in",
-      "https://web-py1p.onrender.com"
+      "https://web-py1p.onrender.com",
+      "https://starfish-app-hom4h.ondigitalocean.app"
     ],
   })
 );
