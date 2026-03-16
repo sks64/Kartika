@@ -10,6 +10,7 @@ const app = express();
 app.use(
   cors({
     origin: [
+     // "http://localhost:3000",
       "https://car.vkrepo.in",
       "https://web-py1p.onrender.com",
       "https://starfish-app-hom4h.ondigitalocean.app"

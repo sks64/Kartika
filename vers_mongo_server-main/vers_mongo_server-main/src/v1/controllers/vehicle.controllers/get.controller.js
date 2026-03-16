@@ -27,7 +27,7 @@ const getVehiclesByAdminOnSearch = async (req, res, next) => {
     if (type === "chassis_no") searchType = "last_four_digit_chassis";
 
     const matchQuery = {
-      [searchType]: parseInt(searchTerm),
+      [searchType]: { $in: [parseInt(searchTerm), String(parseInt(searchTerm))] },
     };
 
     if (branchId) {
@@ -76,7 +76,7 @@ const getVehiclesByUserOnSearch = async (req, res, next) => {
     const vehicles = await Vehicle.aggregate([
       {
         $match: {
-          [searchType]: parseInt(query),
+          [searchType]: { $in: [parseInt(query), String(parseInt(query))] },
         },
       },
       { $skip: (page - 1) * limit },
