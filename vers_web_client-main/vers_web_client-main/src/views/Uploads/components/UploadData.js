@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import axios from "axios";
+import BaseService from "../../../services/BaseService";
 import appConfig from "../../../configs/app.config";
 import { toast } from "react-toastify";
 import { headerOptionsOfServer } from "../constants";
 import { apiUpdateHeader } from "../../../services/VehicleServices";
 import { CgSpinner } from "react-icons/cg";
+
+import Papa from "papaparse";
 
 const notify = (message, type = "error") => toast[type](message);
 
@@ -29,17 +31,19 @@ const UploadData = (props) => {
     selectedBranch,
   } = props;
 
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
   let percent = 0;
   const onUploadToServer = async () => {
+    if (loading) return;
+    
     if (verifiedValidData.length < 1) {
       return notify("Please verify data");
     }
     if (!selectedBranch) {
       return notify("Please select branch");
     }
-    setLoading(true)
+    setLoading(true);
     setDesc("Updating Header...");
     const newUpdateHeaderToServer = {};
     for (let i = 0; i < header.length; i++) {
@@ -60,89 +64,49 @@ const UploadData = (props) => {
       }
     }
     await updateHeader(newUpdateHeaderToServer);
-    setDesc?.("Processing...");
+    
+    setDesc?.("Processing Data...");
     try {
-      const workerCode = `
-      importScripts("https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js");
-      self.addEventListener('message', (e) => {
-        try {
-        const worksheet = XLSX.utils.aoa_to_sheet(e.data);
-        const csvFile = XLSX.utils.sheet_to_csv(worksheet);
-        postMessage(csvFile);
-        }catch(e){
-          console.log(e)
-          postMessage(String(e.message || e).bold() )
-        }
-      }, false);
-    `;
+      const formattedHeaders = header.map((value) =>
+        value
+          ?.toString()
+          ?.toLowerCase()
+          ?.replace(/[^a-zA-Z0-9\s]/g, "")
+          ?.replace(/\s+/g, " ")
+          ?.trim()
+          ?.split(" ")
+          ?.join("_")
+      );
 
-      const blob = new Blob([workerCode], { type: "application/javascript" });
-      if (!blob) {
-        return console.log("something");
-      }
-      const workerURL = URL.createObjectURL(blob);
-
-      const worker = new Worker(workerURL);
-      worker.postMessage([
-        header.map((value) =>
-          value
-            ?.toString()
-            ?.toLowerCase()
-            ?.replace(/[^a-zA-Z0-9\s]/g, "")
-            ?.replace(/\s+/g, " ")
-            ?.trim()
-            ?.split(" ")
-            ?.join("_")
-        ),
-        ...verifiedValidData,
-      ]);
-      worker.onmessage = async (event) => {
-        const csvFile = await event.data;
-        setDesc?.("Processing completed...");
-        const formData = new FormData();
-        const csvBlob = new Blob([csvFile], { type: "text/csv" });
-        formData.append("csv_file", csvBlob, "data.csv");
-        formData.append("branchId", selectedBranch);
-        const config = {
-          onUploadProgress: (progressEvent) => {
-            const { loaded, total } = progressEvent;
-            percent = Math.floor((loaded * 100) / total);
-            if (percent < 100) {
-              setDesc(`${percent}% uploaded`);
-            } else if (percent === 100) {
-              setDesc(`Inserting data`);
-            } else {
-              setDesc("");
-            }
-          },
-        };
-        axios
-          .post(
-            `${appConfig.apiPrefix}v1/vehicle/admin/insert`,
-            formData,
-            config
-          )
-          .then((res) => {
-            setDesc?.("");
-            if (res.status === 200) {
-              notify("Upload Successful", "success");
-              setFileData?.([]);
-              setVerifiedValidData?.([]);
-            } else {
-              notify("Failed");
-            }
-            fetchHeader();
-            setLoading(false)
-          });
+      // Formatting the payload optimally: mapping to an array of arrays to physically compress the file size parameter
+      const payloadObj = {
+        headers: formattedHeaders,
+        data: verifiedValidData
       };
-      worker.onerror = async (e) => {
-        notify("Failed");
+
+      const jsonFile = JSON.stringify(payloadObj);
+      const formData = new FormData();
+      const jsonBlob = new Blob([jsonFile], { type: "application/json" });
+      formData.append("csv_file", jsonBlob, "data.json");
+      formData.append("branchId", selectedBranch);
+
+      const res = await BaseService.post(`v1/vehicle/admin/insert`, formData);
+      
+      if (res.status === 200) {
         setDesc?.("");
-        setLoading(false)
-      };
+        notify("Upload Successful", "success");
+        setFileData?.([]);
+        setVerifiedValidData?.([]);
+        fetchHeader();
+      } else {
+        notify("Failed");
+      }
+      setLoading(false);
     } catch (error) {
-      setLoading(false)
       console.log(error);
+      notify("Failed");
+      setDesc?.("");
+      setLoading(false);
     }
   };
 

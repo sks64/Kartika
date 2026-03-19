@@ -10,7 +10,7 @@ const app = express();
 app.use(
   cors({
     origin: [
-     // "http://localhost:3000",
+      "http://localhost:3000",
       "https://car.vkrepo.in",
       "https://web-py1p.onrender.com",
       "https://starfish-app-hom4h.ondigitalocean.app"
@@ -43,7 +43,22 @@ app.use((err, req, res, next) => {
   });
 });
 
-const port = process.env.PORT || 5000;
-app.listen(port, () => {
+const port = process.env.PORT || 5002;
+const server = app.listen(port, () => {
   console.log(`Hello world app listening on port ${port}!`);
 });
+
+// Handle port already in use gracefully
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ Port ${port} is already in use!`);
+    console.error(`   Run this command to free it: npx kill-port ${port}`);
+    process.exit(1);
+  } else {
+    throw err;
+  }
+});
+
+// Clean shutdown so nodemon restarts release the port immediately
+process.on('SIGTERM', () => server.close(() => process.exit(0)));
+process.on('SIGINT',  () => server.close(() => process.exit(0)));

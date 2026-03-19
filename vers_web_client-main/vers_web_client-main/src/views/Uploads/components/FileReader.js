@@ -18,35 +18,19 @@ const FileReader = (props) => {
     setVerifiedValidData?.([]);
     setLoading?.(true);
 
-    const worker = new Worker(
-      URL.createObjectURL(
-        new Blob([
-          `
-      importScripts("https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js");
-      self.addEventListener('message', (e) => {
-          const ab = new FileReaderSync().readAsArrayBuffer(e.data);
-            const workbook = XLSX.read(ab, { type: "array" });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const excelData = XLSX.utils.sheet_to_csv(worksheet);
-            postMessage(excelData);
-      }, false);
-        `,
-        ])
-      )
-    );
-    worker.postMessage(file);
-    worker.onmessage = async (event) => {
-      const excelData = event.data;
-      Papa.parse(excelData, {
+    const fileName = file.name.toLowerCase();
+
+    // Process CSV using synchronous parsing without workers (safer for Webpack compilation targets)
+    if (fileName.endsWith(".csv")) {
+      Papa.parse(file, {
         header: false,
         skipEmptyLines: true,
         dynamicTyping: true,
-        complete: (data) => {
+        complete: (results) => {
           setLoading?.(false);
-          setFileData?.(data?.data);
+          setFileData?.(results.data);
           setDefaultFileHeader?.(
-            data?.data?.[0]?.map((value) =>
+            results.data[0]?.map((value) =>
               value
                 ?.toString()
                 .toLowerCase()
@@ -56,8 +40,60 @@ const FileReader = (props) => {
             )
           );
         },
+        error: (err) => {
+           setLoading?.(false);
+           console.error("CSV Parse Error", err);
+        }
       });
+      return;
+    }
+
+    // Process Excel via dynamic script injection to bypass strict browser blob-worker CSP
+    const parseExcel = async () => {
+      if (typeof window.XLSX === "undefined") {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      try {
+        const ab = await file.arrayBuffer();
+        // Read file using sheetJS natively on main thread (fast enough for 50mb files)
+        const workbook = window.XLSX.read(ab, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const excelData = window.XLSX.utils.sheet_to_csv(worksheet);
+
+        Papa.parse(excelData, {
+          header: false,
+          skipEmptyLines: true,
+          dynamicTyping: true,
+          complete: (results) => {
+            setLoading?.(false);
+            setFileData?.(results.data);
+            setDefaultFileHeader?.(
+              results.data[0]?.map((value) =>
+                value
+                  ?.toString()
+                  .toLowerCase()
+                  ?.replace(/[^a-zA-Z0-9\s]/g, "")
+                  ?.replace(/\s+/g, " ")
+                  ?.trim()
+              )
+            );
+          },
+        });
+      } catch (error) {
+        setLoading?.(false);
+        console.error("Excel Parsing Error:", error);
+      }
     };
+
+    parseExcel();
   };
 
   return (

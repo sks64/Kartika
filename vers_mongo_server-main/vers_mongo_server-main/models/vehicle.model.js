@@ -146,6 +146,7 @@ const vehicleSchema = new Schema(
     branch_id: {
       type: Schema.Types.ObjectId,
       ref: "Branch",
+      index: true
     },
   },
   {
@@ -153,6 +154,10 @@ const vehicleSchema = new Schema(
     collection: "vehicles",
   }
 );
+
+// Search indexing
+vehicleSchema.index({ last_four_digit_rc: 1 });
+vehicleSchema.index({ last_four_digit_chassis: 1 });
 
 const Vehicle = mongoose.model("Vehicle", vehicleSchema);
 

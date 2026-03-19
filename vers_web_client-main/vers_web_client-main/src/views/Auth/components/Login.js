@@ -21,11 +21,11 @@ const mobileNumberValidator = (mobile) => {
 
 const Login = () => {
   const { signIn } = useAuth();
-  const [mobile, setMobile] = useState();
+  const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState("password");
-  const [otp, setOtp] = useState();
-  const [password, setPassword] = useState();
+  const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
   const [isOTPSend, setIsOTPSend] = useState(false);
 
   const handleChangeMobile = (e) => {

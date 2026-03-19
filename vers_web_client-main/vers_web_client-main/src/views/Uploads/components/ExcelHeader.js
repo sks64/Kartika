@@ -87,6 +87,7 @@ const ExcelHeader = (props) => {
         rowIndex={rowIndex}
       >
         <select
+          value={updatedValue || ""}
           onChange={handleChangeValue}
           disabled={verifiedValidData.length > 0}
           className="outline-blue-600 relative w-full font-normal text-sm"
@@ -98,26 +99,26 @@ const ExcelHeader = (props) => {
               : "",
           }}
         >
-          <option selected defaultValue={updatedValue}>
+          <option value={updatedValue || ""}>
             {updatedValue?.toString().toUpperCase()}
           </option>
           <option
             style={{ color: "gray" }}
-            value={defaultFileHeader?.[colIndex]}
+            value={defaultFileHeader?.[colIndex] || ""}
             disabled={header.includes(updatedValue)}
           >
             {defaultFileHeader?.[colIndex]?.toString().toUpperCase()}
           </option>
-          {headerOptions.map((value) => {
-            const headerOptionKey = Object.keys(value)[0];
+          {headerOptions.map((val, idx) => {
+            const headerOptionKey = Object.keys(val)[0];
             if (!header.includes(headerOptionKey)) {
               return (
-                <option value={headerOptionKey}>
+                <option key={idx} value={headerOptionKey}>
                   {headerOptionKey?.toString().toUpperCase()}
                 </option>
               );
             }
-            return;
+            return null;
           })}
         </select>
       </CustomContextMenu>

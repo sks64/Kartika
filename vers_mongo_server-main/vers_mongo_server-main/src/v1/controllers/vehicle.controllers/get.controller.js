@@ -34,24 +34,12 @@ const getVehiclesByAdminOnSearch = async (req, res, next) => {
       matchQuery.branch_id = new mongoose.Types.ObjectId(branchId);
     }
 
-    const vehicles = await Vehicle.aggregate([
-      {
-        $match: matchQuery,
-      },
-      { $sort: { [type]: 1 } },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
-      {
-        $project: {
-          _id: 1,
-          rc_no: 1,
-          mek_and_model: 1,
-          chassis_no: 1,
-        },
-      },
-    ])
-      .collation({ locale: "hi", strength: 1 })
-      .hint({ [searchType]: 1 });
+    const vehicles = await Vehicle.find(matchQuery)
+      .select("_id rc_no mek_and_model chassis_no")
+      .sort({ [type]: 1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
 
     return res.status(200).json({ data: vehicles });
   } catch (error) {
@@ -73,26 +61,14 @@ const getVehiclesByUserOnSearch = async (req, res, next) => {
     let searchType = "last_four_digit_rc";
     if (type === "chassis_no") searchType = "last_four_digit_chassis";
 
-    const vehicles = await Vehicle.aggregate([
-      {
-        $match: {
-          [searchType]: { $in: [parseInt(query), String(parseInt(query))] },
-        },
-      },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
-      {
-        $project: {
-          _id: 1,
-          rc_no: 1,
-          chassis_no: 1,
-          mek_and_model: 1,
-        },
-      },
-    ])
+    const vehicles = await Vehicle.find({
+      [searchType]: { $in: [parseInt(query), String(parseInt(query))] },
+    })
+      .select("_id rc_no chassis_no mek_and_model")
       .sort({ [type]: 1 })
-      .collation({ locale: "hi", strength: 1 })
-      .hint({ [searchType]: 1 });
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
 
     return res.status(200).json({ data: vehicles });
   } catch (error) {

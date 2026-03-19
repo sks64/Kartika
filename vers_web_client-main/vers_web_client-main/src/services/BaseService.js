@@ -9,7 +9,7 @@ import { onSignOutSuccess } from '../store/auth/sessionSlice'
 const unauthorizedCode = [401]
 
 const BaseService = axios.create({
-    timeout: 60000,
+    timeout: 0,
     baseURL: appConfig.apiPrefix,
 })
 
