@@ -40,16 +40,16 @@ const Uploads = () => {
   };
 
   const onDeleteData = async (props) => {
-    const { type, colIndex } = props;
+    const { type, colIndex, rowIndex } = props;
     switch (type) {
       case "column":
-        const copyData = [...fileData];
+        const copyDataColumn = [...fileData];
         const copyDefaultHeader = [...defaultFileHeader];
         setFileData([]);
         setDefaultFileHeader([]);
         await new Promise((resolve) => setTimeout(resolve, 10));
         setFileData(
-          copyData?.map((innerArray) => {
+          copyDataColumn?.map((innerArray) => {
             return innerArray?.filter((_, index) => index !== colIndex);
           })
         );
@@ -57,8 +57,19 @@ const Uploads = () => {
           copyDefaultHeader.filter((_, index) => index !== colIndex)
         );
         break;
+      case "row":
+        const copyDataRow = [...fileData];
+        setFileData([]);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        setFileData(copyDataRow.filter((_, index) => index !== rowIndex));
+        break;
       default:
         break;
+    }
+  };
+  const onClearInvalid = () => {
+    if (fileData.length > 1) {
+      setFileData([fileData[0]]);
     }
   };
 
@@ -78,7 +89,7 @@ const Uploads = () => {
             .filter(Boolean)
         );
       }
-    } catch (error) {}
+    } catch (error) { }
   };
 
   useEffect(() => {
@@ -97,11 +108,10 @@ const Uploads = () => {
         />
         {/* <CountButton label="Opening" data={`${count}`} /> */}
         <CountButton
-          data={`Total: ${
-            fileData.length > 0
+          data={`Total: ${fileData.length > 0
               ? verifiedValidData.length + fileData.length - 1
               : 0
-          }`}
+            }`}
         />
         <CountButton data={`Valid: ${verifiedValidData.length}`} />
         <CountButton
@@ -112,6 +122,12 @@ const Uploads = () => {
           setFileData={setFileData}
           setVerifiedValidData={setVerifiedValidData}
         />
+        <button
+          className="text-md pe-3 ps-3 h-full bg-red-400 text-white border-0 rounded-sm flex justify-start items-center hover:bg-red-500"
+          onClick={onClearInvalid}
+        >
+          Clear Invalid
+        </button>
         <BranchSelect setSelectedBranch={setSelectedBranch} />
         <UploadData
           fetchHeader={fetchHeader}
@@ -188,6 +204,7 @@ const Uploads = () => {
                             key={index}
                           >
                             <ExcelRow
+                              onDeleteData={onDeleteData}
                               onDataChange={onDataChange}
                               value={value}
                               rowIndex={virtualItem.index}
@@ -206,9 +223,8 @@ const Uploads = () => {
         ) : (
           <div className="h-full w-full justify-center items-center flex flex-col">
             <CgSpinner
-              className={`h-10 w-10 text-blue-500 ${
-                loading ? "animate-spin" : ""
-              }`}
+              className={`h-10 w-10 text-blue-500 ${loading ? "animate-spin" : ""
+                }`}
             />
             <p>Reading file... Please wait...</p>
           </div>

@@ -2,7 +2,7 @@ import React, { memo, useEffect, useState } from "react";
 import CustomContextMenu from "./ContextMenu";
 
 const ExcelRow = (props) => {
-  const { onDataChange, value, rowIndex, colIndex, type = "text" } = props;
+  const { onDeleteData, onDataChange, value, rowIndex, colIndex, type = "text" } = props;
 
   const [updatedValue, setUpdatedValue] = useState(() => {
     if (value === null || value === undefined) {
@@ -28,10 +28,10 @@ const ExcelRow = (props) => {
   const options = [
     {
       name: "Delete Row",
-      onclick: (e) => {
-        console.log(e);
+      onclick: () => {
+        onDeleteData?.({ type: "row", rowIndex });
       },
-      disabled: true
+      disabled: false
     },
     {
       name: "Find By",
