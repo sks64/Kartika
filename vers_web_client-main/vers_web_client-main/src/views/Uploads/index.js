@@ -67,11 +67,6 @@ const Uploads = () => {
         break;
     }
   };
-  const onClearInvalid = () => {
-    if (fileData.length > 1) {
-      setFileData([fileData[0]]);
-    }
-  };
 
   const fetchHeader = async () => {
     try {
@@ -122,12 +117,6 @@ const Uploads = () => {
           setFileData={setFileData}
           setVerifiedValidData={setVerifiedValidData}
         />
-        <button
-          className="text-md pe-3 ps-3 h-full bg-red-400 text-white border-0 rounded-sm flex justify-start items-center hover:bg-red-500"
-          onClick={onClearInvalid}
-        >
-          Clear Invalid
-        </button>
         <BranchSelect setSelectedBranch={setSelectedBranch} />
         <UploadData
           fetchHeader={fetchHeader}
